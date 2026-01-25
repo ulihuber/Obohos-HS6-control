@@ -2,13 +2,9 @@
 
 Control of Obohos HS-6 crane remote
 
-
-
-Obohos Docu
-
+ 
 -----------
-
-
+Obohos Docu
 
 &nbsp;Project: Crane remote interface for nRF905 based OBOHOS HS-6 Systems
 
@@ -39,10 +35,8 @@ Obohos Docu
 
 
 
-
-Serial-Number 
-
 -------------
+Serial-Number 
 
 The serial number of the HS-6 remotes has coded information about the used channel 
 
@@ -85,10 +79,8 @@ Pin20 : SS
 I got the data with PulseView, which has a nice decoder for the NRF905.
 
 
-
-Basic configuration
-
 -------------------
+Basic configuration
 
 The remotes all have a payload size of 2, 32-bit addresses and 8-bit CRC.
 
@@ -99,21 +91,12 @@ Of course the frequency/channel must match too.
 The other configurations in the "nRF905 Radio Library" can remain unchanged.
 
 
-
-
-
-Necessary configurations
-
 ------------------------
-
-
+Necessary configurations
 
 nRF905\_config.h in library needs not to be edited
 
-
-
 Defines for the actual remote and local settings are in Obohos.h:
-
 
 
 \#define CHANNEL 0x71
