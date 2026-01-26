@@ -2,7 +2,7 @@
 
 /* GPIOs
 		7, 			// SPI SS
-		8, 			// CE (standby)
+		0, 			// CE (standby)
 		9, 			// TRX (RX/TX mode)
 		10, 		// PWR (power down)
 		3, 			// CD (collision avoid)
