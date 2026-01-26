@@ -41,6 +41,7 @@ void setup()
 	version = String(DEVICE_NAME) + " " + String(__DATE__) + String("  ") + String(__TIME__);
 	pinMode(LED_PIN, GPIO_MODE_INPUT_OUTPUT);  // for easy inverting
 	digitalWrite(LED_PIN, LED_ON);
+  pinMode(BEEPER,OUTPUT);
 
   getBestWifi();
   getNTPtime();
@@ -113,18 +114,32 @@ void loop()
   	{
 		MQTTclient.loop();
   	ArduinoOTA.handle();
-    if ( ((millis() - startTime)/100) % 10 == 0 && lightState == ON) Serial.printf(" %2d s\r", (SWITCH_OFF_TIME - millis() + startTime)/1000);
+    
+    unsigned long  ms_Remaining = ( startTime + SWITCH_OFF_TIME_MS - millis() );
 
-    if (((millis() - startTime) > SWITCH_OFF_TIME) && lightState == ON) 
+    if ( (ms_Remaining ) % 1000 == 0 && lightState == ON) 
       {
-      digitalWrite(LED_PIN, !LED_ON); 
-	    Serial.println("Licht aus!");
-	    MQTTclient.publish(MQTT_SWITCH_STATE, "OFF", true);
-	    obohosLight(OFF);
-	    lightState = OFF;
-      }
-		delay(10); //LOOP_INTERVAL);
+      Serial.printf(" %2d s\r", ms_Remaining/1000);
+
+      if (ms_Remaining < BEEP_SEQUENCE_MS)
+        {
+        //printf("Beep: %d\n",BEEP_TIME_MS - ms_Remaining * BEEP_TIME_MS / BEEP_SEQUENCE_MS);
+        digitalWrite(BEEPER,ON);
+        delay(BEEP_TIME_MS - ms_Remaining * BEEP_TIME_MS / BEEP_SEQUENCE_MS);
+        digitalWrite(BEEPER,OFF);  
+        }
+
+      if (ms_Remaining == 0 && lightState == ON) 
+        {
+        digitalWrite(LED_PIN, !LED_ON); 
+        Serial.println("Licht aus!");
+        MQTTclient.publish(MQTT_SWITCH_STATE, "OFF", true);
+        obohosLight(OFF);
+        lightState = OFF;
+        }
+      delay(10); //LOOP_INTERVAL);
 		}
+  }
 
 	if(packetStatus != PACKET_OK)
 	  {
@@ -358,9 +373,9 @@ void getBestWifi()
     }
     WiFi.setAutoReconnect(false); 
     WiFi.disconnect();
-    digitalWrite(LED_PIN, !LED_ON);  // blink as indication for network search
+    digitalWrite(LED_PIN, LED_ON);  // blink as indication for network search
     delay(200);                      //
-    digitalWrite(LED_PIN, LED_ON);
+    digitalWrite(LED_PIN, !LED_ON);
   }
   Serial.printf("Connecting to %s, ", nets[bestNet].ssid);
   //WiFi.setHostname("sensor");

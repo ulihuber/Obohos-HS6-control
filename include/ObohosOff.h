@@ -2,14 +2,15 @@
 
 /* GPIOs
 		7, 			// SPI SS
-		0, 			// CE (standby)
+		8, 			// CE (standby)
 		9, 			// TRX (RX/TX mode)
-		10, 		   // PWR (power down)
+		10, 		// PWR (power down)
 		3, 			// CD (collision avoid)
 		2, 			// DR (data ready)
 		1, 			// AM (address match)
 */
 
+#include "secrets.h"
 #include <arduino.h>
 #include <PubSubClient.h>
 #include <ArduinoOTA.h>
@@ -27,6 +28,11 @@ nRF905 transceiver = nRF905(SPI);
 
 #define LED_PIN 8
 #define LED_ON 0         // LED polarity. 1 is active-high. can be changed if LED is inverted
+#define BEEPER 20
+#define BEEP_TIME_MS 300   // ms
+#define BEEP_SEQUENCE_MS	10000
+#define SWITCH_OFF_TIME_MINUTES	60
+#define SWITCH_OFF_TIME_MS 20000 //SWITCH_OFF_TIME_MINUTES * 60 * 1000 //milliseconds
 
 #define ON true
 #define OFF false
@@ -36,9 +42,6 @@ nRF905 transceiver = nRF905(SPI);
 #define MQTT_SWITCH_SET   DEVICE_NAME "/switch/set"
 #define MQTT_SWITCH_STATE DEVICE_NAME "/switch/state"
 #define MQTT_STATE DEVICE_NAME "/state"
-
-#define SWITCH_OFF_MINUTES	60
-#define SWITCH_OFF_TIME  SWITCH_OFF_MINUTES * 60 * 1000 //milliseconds
 
 #define LOOP_INTERVAL   100
 #define PACKET_NONE		0
@@ -53,8 +56,8 @@ typedef struct  // for table of available  wireless networks
   const char *password;
 } Networks;
 
-Networks nets[] = { { "SSID1", "password1" },  // table of available SSIDs
-                    { "SSID2", "password2" } };
+Networks nets[] = { { "SSID1", "SSID1_PW" },  // table of available SSIDs
+                    { "SSID2", "SSID2_PW" } };
 int bestNet = 0;
 
 // Zeitzone-String für Deutschland (automatisch Sommer/Winterzeit)
@@ -67,8 +70,8 @@ const char* timeZone = "CET-1CEST,M3.5.0,M10.5.0/3";
 // MQTT
 const char *deviceName    = DEVICE_NAME;
 const char *mqtt_server   = "homeassistant";   //"homeassistant.local";        // network address of MQTT server
-const char *mqtt_user     = "user";            // MQTT Username here
-const char *mqtt_password = "password";        // MQTT Password here
+const char *mqtt_user     = MQTT_USER;         // MQTT Username here
+const char *mqtt_password = MQTT_PW;           // MQTT Password here
 WiFiClient espClient;
 PubSubClient MQTTclient(espClient);
 
