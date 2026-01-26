@@ -27,12 +27,13 @@ void nRF905_onRxInvalid(nRF905* device)
 	transceiver.standby();
   }
 
+/******************************************************************************* */
 void setup()
   {
   Serial.begin(115200);
 	//while(!Serial.available());
   delay(5000);
-  Serial.printf("\n\nObohos - U.Huber 2026\n");
+  Serial.printf("Obohos - U.Huber 2026\n");
 	Serial.println("Build: " __TIME__ "  " __DATE__);
 	Serial.println(__FILE__);
 	char *p1;
@@ -42,24 +43,28 @@ void setup()
 	pinMode(LED_PIN, GPIO_MODE_INPUT_OUTPUT);  // for easy inverting
 	digitalWrite(LED_PIN, LED_ON);
   pinMode(BEEPER,OUTPUT);
-
+  
+  // connect to best SSID ang get network time
   getBestWifi();
   getNTPtime();
 
-	Serial.println("Init MQTT");   
+  // initialize MQTT
+	Serial.println(F("Init MQTT"));   
 	MQTTclient.setServer(mqtt_server, 1883);
-	MQTTclient.setBufferSize(512);  // discovery packet is bigger than 256
+	MQTTclient.setBufferSize(512);  // discovery packet can be bigger than 256
 	MQTTsendDiscover();
 	MQTTclient.setCallback(callback);
 	MQTTclient.subscribe(MQTT_SWITCH_SET);
 	MQTTclient.publish(MQTT_SWITCH_STATE, "OFF", true);
 
-	Serial.println("Init OTA");
+	// initialize OTA
+  Serial.println(F("Init OTA"));
 	ArduinoOTA.setPassword("uhu");
 	ArduinoOTA.setHostname(DEVICE_NAME);
 	ArduinoOTA.begin();
 
-
+  // initialize NRF905
+  Serial.println(F("Init NRF905"));
 	transceiver.begin(
 		10000000, // SPI Clock speed (10MHz)
 		7, // SPI SS
@@ -85,23 +90,20 @@ void setup()
 	transceiver.setListenAddress(RXADDR);
   transceiver.setPayloadSize(PAYLOAD_SIZE,PAYLOAD_SIZE);
   transceiver.setChannel(CHANNEL);
-
-
 	// Put into receive mode
 	transceiver.RX();
 
-	Serial.println(F("Server started"));
 	byte regs[NRF905_REGISTER_COUNT];
 	transceiver.getConfigRegisters(regs);
-	Serial.print(F("Raw: "));
+	Serial.print(F("NRF905 config (raw): "));
 	byte dataInvalid = 0;
 	for(byte i=0;i<NRF905_REGISTER_COUNT;i++)
 	  Serial.printf("%02x ",regs[i]);
 	  
-  Serial.printf("\nPayloadsize: %d\n",PAYLOAD_SIZE);
-
+  // send device data to HomeAssistant
   MQTTsendBlock();
-  Serial.println("Startup complete!\n");
+
+  Serial.println(F("Startup complete!\n"));
   Serial.println(F("Waiting for remote or HomeAssistant..."));
   }
 
@@ -112,23 +114,29 @@ void loop()
 	// Wait for data
 	while(packetStatus == PACKET_NONE)
   	{
+    // Refresh handles
 		MQTTclient.loop();
   	ArduinoOTA.handle();
-    
-    unsigned long  ms_Remaining = ( startTime + SWITCH_OFF_TIME_MS - millis() );
 
+    // Test for timeout 
+    unsigned long  ms_Remaining = ( startTime + SWITCH_OFF_TIME_MS - millis() );
+    
+    // Only every second
     if ( (ms_Remaining ) % 1000 == 0 && lightState == ON) 
       {
+      // Print remaining time  
       Serial.printf(" %2d s\r", ms_Remaining/1000);
 
+      // Check if timout is approching and give periodical 
+      // and increasing alarm
       if (ms_Remaining < BEEP_SEQUENCE_MS)
         {
-        //printf("Beep: %d\n",BEEP_TIME_MS - ms_Remaining * BEEP_TIME_MS / BEEP_SEQUENCE_MS);
         digitalWrite(BEEPER,ON);
         delay(BEEP_TIME_MS - ms_Remaining * BEEP_TIME_MS / BEEP_SEQUENCE_MS);
         digitalWrite(BEEPER,OFF);  
         }
 
+      // Switch Off if timout strikes
       if (ms_Remaining == 0 && lightState == ON) 
         {
         digitalWrite(LED_PIN, !LED_ON); 
@@ -141,6 +149,7 @@ void loop()
 		}
   }
 
+  // Ignore packets from other remotes
 	if(packetStatus != PACKET_OK)
 	  {
 		packetStatus = PACKET_NONE;
@@ -149,30 +158,31 @@ void loop()
 	  }
 	else
 	  {
+    // Packet accepted (payload-size and address match)
 		packetStatus = PACKET_NONE;
     startTime = millis();
 		// Make buffer for data and read payload
 		uint8_t buffer[PAYLOAD_SIZE];
 		transceiver.read(buffer, sizeof(buffer));
 
-    if (buffer[0] == 4)
+    if (buffer[0] == COMMAND_OFF)
       {
-      digitalWrite(LED_PIN, !LED_ON); 
 	    if (lightState == ON) 
         {
         Serial.println("Licht aus!");
         MQTTclient.publish(MQTT_SWITCH_STATE, "OFF", true);
         }
+      digitalWrite(LED_PIN, !LED_ON); 
       lightState = OFF;
       } 
-    else if (buffer[0] == 8)
+    else if (buffer[0] == COMMAND_ON)
       {
-      digitalWrite(LED_PIN, LED_ON); 
 	    if (lightState == OFF) 
         {
         Serial.println("Licht an!");
         MQTTclient.publish(MQTT_SWITCH_STATE, "ON", true);
         }
+      digitalWrite(LED_PIN, LED_ON); 
       lightState = ON;
       } 
 
@@ -181,6 +191,8 @@ void loop()
 	  }
   }
 
+/*************************************************************************/
+// Sends ON/OFF commands to Obohos receiver 
 
 void obohosLight(bool lightCommandOn)
 	{
@@ -291,7 +303,7 @@ void MQTTsendBlock() {
   MQTTreconnect();
  
   JsonDocument doc;
-  doc["time"] = timeString; //"01.01.2000"; //epoch_to_string(time(nullptr));
+  doc["time"] = timeString; 
   doc["IP"] = WiFi.localIP().toString();
   doc["SSID"] = String(nets[bestNet].ssid);
   doc["RSSI_WIFI"] = WiFi.RSSI();
@@ -333,10 +345,9 @@ void callback(char* topic, byte* payload, unsigned int length)
 	  MQTTclient.publish(MQTT_SWITCH_STATE, "ON", true);
 	  obohosLight(ON);
 	  lightState = ON;
-    startTime = millis();
+    startTime = millis();    // initialize timeout
     }	
-  MQTTsendBlock();
-
+  MQTTsendBlock();           // send actual device info
   }
 
 
@@ -350,6 +361,7 @@ void getBestWifi()
   //WiFi.persistent(true);
   WiFi.mode(WIFI_STA);
 
+  // Check for best SSID
   Serial.printf("Network Scan\n");
   int i;
   for (i = 0; i < sizeof(nets) / sizeof(Networks); i++) 
@@ -365,7 +377,7 @@ void getBestWifi()
     else 
     {
       Serial.printf("RSSI: %d\n", WiFi.RSSI());
-      if (WiFi.RSSI() > bestRSSI)  // keep index for SSID with better RSSI
+      if (WiFi.RSSI() > bestRSSI)  // keep index of SSID with better RSSI
       {
         bestRSSI = WiFi.RSSI();
         bestNet = i;
@@ -377,6 +389,8 @@ void getBestWifi()
     delay(200);                      //
     digitalWrite(LED_PIN, !LED_ON);
   }
+
+  // Connect to best SSID
   Serial.printf("Connecting to %s, ", nets[bestNet].ssid);
   //WiFi.setHostname("sensor");
   WiFi.begin(nets[bestNet].ssid, nets[bestNet].password);
@@ -392,10 +406,10 @@ void getBestWifi()
 // Get local time
 void getNTPtime()
   {
-  // NTP mit Zeitzonen-String konfigurieren
+  // Config NTP with timezone-string
   configTzTime(timeZone, ntpServer);
   
-  // Auf Zeitabruf warten
+  // Get actual time
   struct tm timeinfo;
   if (!getLocalTime(&timeinfo)) {
     Serial.println("Fehler beim Abruf der Zeit!");

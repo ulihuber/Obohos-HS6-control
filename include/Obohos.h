@@ -24,6 +24,9 @@
 #define RXADDR  0x40060006 // Address of this device
 #define TXADDR  0x40060006 // Address of device to send to
 #define PAYLOAD_SIZE 2
+#define COMMAND_ON 8
+#define COMMAND_OFF 4
+
 nRF905 transceiver = nRF905(SPI);
 
 #define LED_PIN 8
@@ -56,8 +59,8 @@ typedef struct  // for table of available  wireless networks
   const char *password;
 } Networks;
 
-Networks nets[] = { { "SSID1", "SSID1_PW" },  // table of available SSIDs
-                    { "SSID2", "SSID2_PW" } };
+Networks nets[] = { { SSID1, SSID1_PW },  // table of available SSIDs
+                    { SSID2, SSID2_PW } };
 int bestNet = 0;
 
 // Zeitzone-String für Deutschland (automatisch Sommer/Winterzeit)
