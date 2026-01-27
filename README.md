@@ -49,7 +49,7 @@ Pin20 : SS<br>
 I got the data with PulseView, which has a nice decoder for the NRF905.<br>
 
 <h2>Basic configuration</h2>
-The remotes all have a payload size of 2, 32-bit addresses and 8-bit CRC.<br>
+The remotes all have a 2 byte payload size, 32-bit addresses and 8-bit CRC.<br>
 The NRF905 chip ignores all communications with not matching payload size and/or wrong address and/or wrong CRC.<br>
 Of course the frequency/channel must match too.<br>
 The other configurations in the "nRF905 Radio Library" can remain unchanged<br>
