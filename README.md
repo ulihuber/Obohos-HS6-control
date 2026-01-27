@@ -46,7 +46,7 @@ Pin 1 : MISO<br>
 Pin2  : MOSI<br>
 Pin19 : SCK<br>
 Pin20 : SS<br>
-I got the data with PulseView, which has a nice decoder for the NRF905.<br>
+I sniffered the data with PulseView, which has a nice decoder for the NRF905.<br>
 
 <h2>Basic configuration</h2>
 The remotes all have a 2 byte payload size, 32-bit addresses and 8-bit CRC.<br>
