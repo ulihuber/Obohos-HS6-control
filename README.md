@@ -10,8 +10,6 @@ License: GNU GPL v3
 
 - Arduino based, should work on any ESP32 with WiFi
 
-- Added Python script to calculate frequency/channel and address from OBOHOS serial number
-
 - Tested only for remotes in the 433MHz band
 
 - Connects to best SSID from provided list
@@ -23,6 +21,8 @@ License: GNU GPL v3
 - Provides automatic power down after timeout (to avoid leaving it switched on...)
 
 - Provides network time for debug and other purposes
+  
+- Bonus: Added Python script to calculate frequency/channel and address from OBOHOS serial number
 
 <h2>Serial-Number </h2>
 The serial number of the HS-6 remotes has coded information about the used channel and address. <BR>
