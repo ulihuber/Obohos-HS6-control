@@ -6,7 +6,7 @@ Uses nRF905 Radio Library for Arduino (by Zak Kemble)<br>
 Copyright: (C) 2026 by Uli Huber<br>
 License: GNU GPL v3 
 
-<h2> Features:</h2>
+<h2> Features:</h2> 
 
 - Arduino based, should work on any ESP32 with WiFi
 
