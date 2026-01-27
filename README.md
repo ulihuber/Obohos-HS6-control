@@ -42,11 +42,22 @@ Because of LSB reversal it is 0x10070006<br>
 Obohos.py is a simple calculator for address and channel.
 If the calculation fails, the only way to get the information is tapping the PIC16F716, where the SPI-Protocol to the NRF905 is handled.<br>
 
-Pin 1: &nbsp;&nbsp;&nbsp;&nbsp;MISO<br>
-Pin2: &nbsp;&nbsp;&nbsp;&nbsp;MOSI<br>
-Pin19:&nbsp;&nbsp;&nbsp;&nbsp;SCK<br>
-Pin20:&nbsp;&nbsp;&nbsp;&nbsp; SS<br>
+- Pin 1: &nbsp;&nbsp;&nbsp;&nbsp;MISO<br>
+- Pin2: &nbsp;&nbsp;&nbsp;&nbsp;MOSI<br>
+- Pin19:&nbsp;&nbsp;&nbsp;&nbsp;SCK<br>
+- Pin20:&nbsp;&nbsp;&nbsp;&nbsp; SS<br>
+
 I sniffered the data with PulseView, which has a nice decoder for the NRF905.<br>
+
+<h2>Codes</h2>
+The HS-06 remote uses following codes:<br>
+
+- 0x01  Down<br>
+- 0x02  Up<br>
+- 0x04  Off<br>
+- 0x08  On<br>
+- 0x10  Right<br>
+- 0x80  Left<br>
 
 <h2>Basic configuration</h2>
 The remotes all have a 2 byte payload size, 32-bit addresses and 8-bit CRC.<br>
