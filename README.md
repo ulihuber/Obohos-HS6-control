@@ -23,29 +23,27 @@ License: GNU GPL v3
 - Provides network time for debug and other purposes
 
 <h2>Serial-Number </h2>
-The serial number of the HS-6 remotes has coded information about the used channel 
+The serial number of the HS-6 remotes has coded information about the used channel and address. <BR>
+The information below is the result of analysing the internal protocol of three HS-6 remotes and therefore empiric. It might not fit to all remotes. There are older serial numbers with a 2-digit frequency code that do not match. 
 
-and address. The information below is the result of analysing the internal protocol of three HS-6 remotes and therefore empiric. It might not fit to all remotes. There are older serial numbers with a 2-digit frequency code that do not match. 
+<h5>Example:  710C334</h5>
 
-Example:  710C334
-
-710: 	lower part of 4 dig hex address (assume 0710)<br>
-C:		unknown, Separator?<br>
-3:    unknown<br>
-34: 	channel indicator.  channel=int(((430.3 + 34/10)-422.4)\*10) = 0x71<br>
+710:&nbsp;&nbsp;&nbsp;&nbsp;lower part of 4 dig hex address (assume 0710)<br>
+C:  &nbsp;&nbsp;&nbsp;&nbsp;unknown, Separator?<br>
+3:  &nbsp;&nbsp;&nbsp;&nbsp;unknown<br>
+34: &nbsp;&nbsp;&nbsp;&nbsp;channel indicator.  channel=int(((430.3 + 34/10)-422.4)\*10) = 0x71<br>
 
 The 32 bit hex address is built from first 3 or 4 hex digits and a suffix "0006".
-Because of LSB reversal it is 0x10070006
+Because of LSB reversal it is 0x10070006<br>
 
-
-
+<h5>Address and frequency calculator</h5>
 Obohos.py is a simple calculator for address and channel.
 If the calculation fails, the only way to get the information is tapping the PIC16F716, where the SPI-Protocol to the NRF905 is handled.<br>
 
-Pin 1 : MISO<br>
-Pin2  : MOSI<br>
-Pin19 : SCK<br>
-Pin20 : SS<br>
+Pin 1: &nbsp;&nbsp;&nbsp;&nbsp;MISO<br>
+Pin2: &nbsp;&nbsp;&nbsp;&nbsp;MOSI<br>
+Pin19:&nbsp;&nbsp;&nbsp;&nbsp;SCK<br>
+Pin20:&nbsp;&nbsp;&nbsp;&nbsp; SS<br>
 I sniffered the data with PulseView, which has a nice decoder for the NRF905.<br>
 
 <h2>Basic configuration</h2>
@@ -56,22 +54,21 @@ The other configurations in the "nRF905 Radio Library" can remain unchanged<br>
 
 <h2>Necessary configurations</h2>
 nRF905\_config.h in library needs not to be edited
-Defines for the actual remote and local settings are in Obohos.h:
-
-\#define CHANNEL 0x71<br>
-\#define RXADDR  0x40060006 // Address of this device<br>
-\#define TXADDR  0x40060006 // Address of device to send to<br>
+<h4>Defines for the actual remote and local settings are in Obohos.h: </h4>
+#define DEVICE\_NAME "Obohos"<br>
 and<br>
-\#define DEVICE\_NAME "Obohos"<br>
-
-const char \*mqtt\_server   = "homeassistant";   //"homeassistant.local" network address of MQTT server<br>
-const char \*mqtt\_user     = "user";            // MQTT Username here<br>
-const char \*mqtt\_password = "password";        // MQTT Password here<br>
+#define CHANNEL 0x71<br>
+#define RXADDR  0x10070006 &nbsp;&nbsp;&nbsp;&nbsp;// Address of this device<br>
+#define TXADDR  0x10070006 &nbsp;&nbsp;&nbsp;&nbsp;// Address of device to send to<br>
 
 const char\* timeZone = "CET-1CEST,M3.5.0,M10.5.0/3";<br>
 
-Networks nets\[] = { { "SSID1", "password1" },  // table of available SSIDs<br>
-                     { "SSID2", "password2" } };<br>
+<h4>Private credentials need to be completed in includes/secrets.h.example and saved as includes/secrets.h :</h4>
+const char \*mqtt\_server   = "homeassistant"; &nbsp;&nbsp;&nbsp;&nbsp;//"homeassistant.local" network address of MQTT server<br>
+const char \*mqtt\_user     = "user";          &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;  // MQTT Username here<br>
+const char \*mqtt\_password = "password";     &nbsp;&nbsp;&nbsp;&nbsp;   // MQTT Password here<br>
+Networks nets\[] = { { "SSID1", "password1" },{ "SSID2", "password2" } }; &nbsp;&nbsp;&nbsp;&nbsp; // table of available SSIDs, can be more than two<br>
+
 
 
 
