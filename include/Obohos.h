@@ -2,7 +2,7 @@
 
 /* GPIOs
 		7, 			// SPI SS
-		0, 			// CE (standby)
+		8, 			// CE (standby)
 		9, 			// TRX (RX/TX mode)
 		10, 		// PWR (power down)
 		3, 			// CD (collision avoid)
@@ -32,8 +32,8 @@ nRF905 transceiver = nRF905(SPI);
 #define LED_PIN 8
 #define LED_ON 0         // LED polarity. 1 is active-high. can be changed if LED is inverted
 #define BEEPER 20
-#define BEEP_TIME_MS 300   // ms
-#define BEEP_SEQUENCE_MS	10000
+#define BEEP_TIME_MS 900   // ms
+#define BEEP_SEQUENCE_MS	15000
 #define SWITCH_OFF_TIME_MINUTES	60
 #define SWITCH_OFF_TIME_MS 20000 //SWITCH_OFF_TIME_MINUTES * 60 * 1000 //milliseconds
 
@@ -83,12 +83,14 @@ String version;
 bool lightState = OFF;
 unsigned long startTime;
 
+void beep(int duration);
 void getBestWifi();
+void getNTPtime();
 void MQTTreconnect();
 void MQTTsendDiscover();
 void MQTTsendBlock();
-void getNTPtime();
-void callback(char* topic, byte* payload, unsigned int length) ;
+void MQTTcallback(char* topic, byte* payload, unsigned int length) ;
+void checkTimeout(void);
 void obohosLight(bool lightCommandOn);
 void nRF905_onRxComplete(nRF905* device);
 void nRF905_onRxInvalid(nRF905* device);

@@ -33,6 +33,8 @@ void setup()
   Serial.begin(115200);
 	//while(!Serial.available());
   delay(5000);
+  pinMode(BEEPER,OUTPUT);
+  beep(100);
   Serial.printf("Obohos - U.Huber 2026\n");
 	Serial.println("Build: " __TIME__ "  " __DATE__);
 	Serial.println(__FILE__);
@@ -42,7 +44,6 @@ void setup()
 	version = String(DEVICE_NAME) + " " + String(__DATE__) + String("  ") + String(__TIME__);
 	pinMode(LED_PIN, GPIO_MODE_INPUT_OUTPUT);  // for easy inverting
 	digitalWrite(LED_PIN, LED_ON);
-  pinMode(BEEPER,OUTPUT);
   
   // connect to best SSID ang get network time
   getBestWifi();
@@ -53,7 +54,7 @@ void setup()
 	MQTTclient.setServer(mqtt_server, 1883);
 	MQTTclient.setBufferSize(512);  // discovery packet can be bigger than 256
 	MQTTsendDiscover();
-	MQTTclient.setCallback(callback);
+	MQTTclient.setCallback(MQTTcallback);
 	MQTTclient.subscribe(MQTT_SWITCH_SET);
 	MQTTclient.publish(MQTT_SWITCH_STATE, "OFF", true);
 
@@ -105,6 +106,7 @@ void setup()
 
   Serial.println(F("Startup complete!\n"));
   Serial.println(F("Waiting for remote or HomeAssistant..."));
+  beep(200);
   }
 
 /******************************************************************/
@@ -117,37 +119,10 @@ void loop()
     // Refresh handles
 		MQTTclient.loop();
   	ArduinoOTA.handle();
-
-    // Test for timeout 
-    unsigned long  ms_Remaining = ( startTime + SWITCH_OFF_TIME_MS - millis() );
-    
-    // Only every second
-    if ( (ms_Remaining ) % 1000 == 0 && lightState == ON) 
-      {
-      // Print remaining time  
-      Serial.printf(" %2d s\r", ms_Remaining/1000);
-
-      // Check if timout is approching and give periodical 
-      // and increasing alarm
-      if (ms_Remaining < BEEP_SEQUENCE_MS)
-        {
-        digitalWrite(BEEPER,ON);
-        delay(BEEP_TIME_MS - ms_Remaining * BEEP_TIME_MS / BEEP_SEQUENCE_MS);
-        digitalWrite(BEEPER,OFF);  
-        }
-
-      // Switch Off if timout strikes
-      if (ms_Remaining == 0 && lightState == ON) 
-        {
-        digitalWrite(LED_PIN, !LED_ON); 
-        Serial.println("Licht aus!");
-        MQTTclient.publish(MQTT_SWITCH_STATE, "OFF", true);
-        obohosLight(OFF);
-        lightState = OFF;
-        }
-      delay(10); //LOOP_INTERVAL);
+    checkTimeout();
+    //delay(10); //LOOP_INTERVAL);
 		}
-  }
+  
 
   // Ignore packets from other remotes
 	if(packetStatus != PACKET_OK)
@@ -171,6 +146,7 @@ void loop()
         {
         Serial.println("Licht aus!");
         MQTTclient.publish(MQTT_SWITCH_STATE, "OFF", true);
+
         }
       digitalWrite(LED_PIN, !LED_ON); 
       lightState = OFF;
@@ -185,11 +161,48 @@ void loop()
       digitalWrite(LED_PIN, LED_ON); 
       lightState = ON;
       } 
-
+    MQTTsendBlock();
 		transceiver.RX();
 
 	  }
   }
+
+/***********************************************************/
+
+void checkTimeout(void)
+  {
+  // Test for timeout 
+  int ms_Remaining = ( startTime + SWITCH_OFF_TIME_MS - millis() );
+  
+  // Only every second
+  if ( (ms_Remaining ) % 1000 == 0 && lightState == ON) 
+    {
+    // Print remaining time  
+    Serial.printf(" %2d s\r", ms_Remaining/1000);
+
+    // Check if timout is approching and give periodical 
+    // and increasing alarm
+    if (ms_Remaining < BEEP_SEQUENCE_MS)
+      beep(BEEP_TIME_MS - ms_Remaining * BEEP_TIME_MS / BEEP_SEQUENCE_MS);
+
+    // Switch Off if timout strikes
+    if (ms_Remaining <= 0 && lightState == ON) 
+      {
+      digitalWrite(LED_PIN, !LED_ON); 
+      Serial.println("Licht aus!");
+      MQTTclient.publish(MQTT_SWITCH_STATE, "OFF", true);
+      obohosLight(OFF);
+      lightState = OFF;
+      }
+    }
+  }
+
+  void beep(int duration)
+    {  
+    digitalWrite(BEEPER,ON);
+    delay(duration);
+    digitalWrite(BEEPER,OFF); 
+    }
 
 /*************************************************************************/
 // Sends ON/OFF commands to Obohos receiver 
@@ -214,114 +227,7 @@ void obohosLight(bool lightCommandOn)
 //****************************************************************
 // MQTT routines
 
-void MQTTreconnect() 
-{
-  // Init MQTT
-  int attempts = 0;
-  while (!MQTTclient.connected() && (attempts++ < 3))  // Loop if we're not reconnected
-  {
-    Serial.println("Attempting MQTT connection...");
-    if (MQTTclient.connect(deviceName, mqtt_user, mqtt_password)) 
-    {
-      Serial.println("connected");
-    } 
-    else 
-    {
-      //Serial.printf("MQTT connect failed, rc= %s\n", MQTTclient.state());
-      Serial.println("MQTT try again in 5 seconds\n");
-      if (WiFi.status() != WL_CONNECTED) getBestWifi() ;
-      delay(2000);  // Wait 5 seconds before retrying
-    }
-  }
-  if (!MQTTclient.connected())
-  {
-    Serial.printf("No MQTT server\n");
-  }
-}
-
-void sendMQTTDiscoveryMsg(String topic, String topic_type,  String unit, String entityClass, String iconString, String yamlTemplate) 
-{
-  String discoveryTopic = String("homeassistant/") 
-                          + topic_type + "/"
-                          + DEVICE_NAME + "/" 
-                          + topic 
-                          + "/config";
-  JsonDocument doc;
-  doc["name"] = topic;  //String(initData.sensorName) + "_" + topic;
-  doc["unique_id"] = String(DEVICE_NAME) + "_" + topic;
-  doc["force_update"] = true;
-  doc["enabled_by_default"] = true;
-  if (iconString.length() > 0)   doc["icon"] = iconString;
-  if (topic_type == "sensor")
-    {
-    doc["state_topic"] = String(DEVICE_NAME) +"/state";
-    if (unit != "") doc["unit_of_measurement"] = unit;
-    if (entityClass != "") doc["device_class"] = entityClass;
-    doc["value_template"] = yamlTemplate;
-    }
-  else if (topic_type == "switch")
-    { 
-    doc["state_topic"] = String(MQTT_SWITCH_STATE);
-    doc["command_topic"] = String(MQTT_SWITCH_SET);
-    doc["payload_on"] = String("ON");
-    doc["payload_off"] = String("OFF");
-    }
-  JsonObject device = doc["device"].to<JsonObject>();
-  doc["enabled_by_default"] = true;
-  device["manufacturer"] = "UHU";
-  device["model"] = version;
-  device["name"] = String(DEVICE_NAME);
-  device["identifiers"][0] = String(DEVICE_NAME);  //WiFi.macAddress();
-
-  char output[512];
-  doc.shrinkToFit();  // optional
-  int n = serializeJson(doc, output);
-
-  MQTTreconnect();
-  if (!MQTTclient.publish(discoveryTopic.c_str(), (const uint8_t*)output, n, true)) 
-     Serial.printf("MQTT publish discovery - Fehler!\n");
-  delay(200);
-}
-
-void MQTTsendDiscover() 
-  {
-  sendMQTTDiscoveryMsg("Time",         "sensor", "",   "",            "mdi:clock-outline", "{{ value_json.time }}");
-  sendMQTTDiscoveryMsg("IP",           "sensor", "",   "",            "mdi:wifi",          "{{ value_json.IP }}");
-  sendMQTTDiscoveryMsg("SSID",         "sensor", "",   "",            "mdi:wifi",          "{{ value_json.SSID }}");
-  sendMQTTDiscoveryMsg("RSSI_WIFI",    "sensor", "dB", "",            "mdi:wifi",          "{{ value_json.RSSI_WIFI}}");
-  sendMQTTDiscoveryMsg("Light",        "switch",  "",  "",            "mdi:lightbulb",     "{{ value_json.light }}");
-  }
-
-void MQTTsendBlock() {
-  char timeString[64];
-  struct tm timeinfo;
-  if (getLocalTime(&timeinfo)) 
-    {
-    strftime(timeString, sizeof(timeString), "%Y-%m-%dT%H:%M:%S", &timeinfo); //   "%d.%m.%Y %H:%M"
-    }
-
-  MQTTreconnect();
- 
-  JsonDocument doc;
-  doc["time"] = timeString; 
-  doc["IP"] = WiFi.localIP().toString();
-  doc["SSID"] = String(nets[bestNet].ssid);
-  doc["RSSI_WIFI"] = WiFi.RSSI();
-  doc["version"] =    version;
-
-  char buffer[500];
-  int n = serializeJson(doc, buffer);
-  //Serial.printf("JSON buffersize data: %d\n", n);
-  if (!MQTTclient.publish(MQTT_STATE, (const uint8_t*)buffer, n, true))
-    Serial.printf("MQTT publish data - Fehler!\n");
-  delay(200);
-}
-
-
-//**************************************************************************
-// callback - Wird aufgerufen, wenn HA den Schalter betätigt
-
-void callback(char* topic, byte* payload, unsigned int length) 
+void MQTTcallback(char* topic, byte* payload, unsigned int length) 
   {
   String msg = "";
   //Serial.println("Callback");
@@ -350,6 +256,111 @@ void callback(char* topic, byte* payload, unsigned int length)
   MQTTsendBlock();           // send actual device info
   }
 
+
+
+void MQTTreconnect() 
+{
+  // Init MQTT
+  int attempts = 0;
+  while (!MQTTclient.connected() && (attempts++ < 3))  // Loop if we're not reconnected
+  {
+    Serial.println("Attempting MQTT connection...");
+    if (MQTTclient.connect(deviceName, mqtt_user, mqtt_password)) 
+    {
+      Serial.println("connected");
+    } 
+    else 
+    {
+      //Serial.printf("MQTT connect failed, rc= %s\n", MQTTclient.state());
+      Serial.println("MQTT try again in 5 seconds\n");
+      if (WiFi.status() != WL_CONNECTED) getBestWifi() ;
+      delay(2000);  // Wait 5 seconds before retrying
+    }
+  }
+  if (!MQTTclient.connected())
+  {
+    Serial.printf("No MQTT server\n");
+  }
+}
+
+void sendMQTTDiscoveryMsg(String topic, String topic_type,  String unit, String deviceClass, String iconString, String yamlTemplate) 
+{
+  String discoveryTopic = String("homeassistant/") 
+                          + topic_type + "/"
+                          + DEVICE_NAME + "/" 
+                          + topic 
+                          + "/config";
+  JsonDocument doc;
+  doc["name"] = topic;  //String(initData.sensorName) + "_" + topic;
+  doc["unique_id"] = String(DEVICE_NAME) + "_" + topic;
+  doc["force_update"] = true;
+  doc["enabled_by_default"] = true;
+  if (iconString.length() > 0)   doc["icon"] = iconString;
+  if (topic_type == "sensor")
+    {
+    doc["state_topic"] = String(DEVICE_NAME) +"/state";
+    if (unit != "") doc["unit_of_measurement"] = unit;
+    if (deviceClass != "") doc["device_class"] = deviceClass;
+    doc["value_template"] = yamlTemplate;
+    }
+  else if (topic_type == "switch")
+    { 
+    doc["state_topic"] = String(MQTT_SWITCH_STATE);
+    doc["command_topic"] = String(MQTT_SWITCH_SET);
+    doc["payload_on"] = String("ON");
+    doc["payload_off"] = String("OFF");
+    }
+  JsonObject device = doc["device"].to<JsonObject>();
+  doc["enabled_by_default"] = true;
+  device["manufacturer"] = "UHU";
+  device["model"] = version;
+  device["name"] = String(DEVICE_NAME);
+  device["identifiers"][0] = String(DEVICE_NAME);  //WiFi.macAddress();
+
+  char output[512];
+  doc.shrinkToFit();  // optional
+  int n = serializeJson(doc, output);
+
+  MQTTreconnect();
+  if (!MQTTclient.publish(discoveryTopic.c_str(), (const uint8_t*)output, n, true)) 
+     Serial.printf("MQTT publish discovery - Fehler!\n");
+  delay(200);
+}
+
+void MQTTsendDiscover() 
+  {
+  //                    Name         Type     Unit   Dev-Class            Icon                     json-Name
+  sendMQTTDiscoveryMsg("Time",      "sensor",  "",    "",        "mdi:clock-outline", "{{ value_json.time }}");
+  sendMQTTDiscoveryMsg("IP",        "sensor",  "",    "",        "mdi:wifi",          "{{ value_json.IP }}");
+  sendMQTTDiscoveryMsg("SSID",      "sensor",  "",    "",        "mdi:wifi",          "{{ value_json.SSID }}");
+  sendMQTTDiscoveryMsg("RSSI_WIFI", "sensor",  "dB",  "",        "mdi:wifi",          "{{ value_json.RSSI_WIFI}}");
+  sendMQTTDiscoveryMsg("Light",     "switch",   "",   "",        "mdi:lightbulb",     "{{ value_json.light }}");
+  }
+
+void MQTTsendBlock() {
+  char timeString[64];
+  struct tm timeinfo;
+  if (getLocalTime(&timeinfo)) 
+    {
+    strftime(timeString, sizeof(timeString), "%Y-%m-%dT%H:%M:%S", &timeinfo); //   "%d.%m.%Y %H:%M"
+    }
+
+  MQTTreconnect();
+ 
+  JsonDocument doc;
+  doc["time"] = timeString; 
+  doc["IP"] = WiFi.localIP().toString();
+  doc["SSID"] = String(nets[bestNet].ssid);
+  doc["RSSI_WIFI"] = WiFi.RSSI();
+  doc["version"] =    version;
+
+  char buffer[500];
+  int n = serializeJson(doc, buffer);
+  //Serial.printf("JSON buffersize data: %d\n", n);
+  if (!MQTTclient.publish(MQTT_STATE, (const uint8_t*)buffer, n, true))
+    Serial.printf("MQTT publish data - Fehler!\n");
+  delay(200);
+}
 
   //**************************************************************************
 // find best wireless network from list nets[]
