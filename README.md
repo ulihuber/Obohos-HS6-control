@@ -1,12 +1,14 @@
 # Obohos-HS6-control
 
-Control of Obohos HS-6 crane remote <br>
+Control of Obohos HS-6 crane remote by ESP32C3 Super Mini controller<br>
 Project: Crane remote interface for nRF905 based OBOHOS HS-6 Systems<br>
 Uses nRF905 Radio Library for Arduino (by Zak Kemble)<br>
 Copyright: (C) 2026 by Uli Huber<br>
 License: GNU GPL v3 
 
 <h2> Features:</h2>
+
+- Arduino based, should work on any ESP32 with WiFi
 
 - Added Python script to calculate frequency/channel and address from OBOHOS serial number
 
