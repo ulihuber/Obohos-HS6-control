@@ -82,14 +82,7 @@ Networks nets\[] = { { "SSID1", "password1" },{ "SSID2", "password2" } }; &nbsp;
 
 <h2>Schematic</h2>
 This is just an example for the ESP32C3 Super mini. Any other ESP32 will do.<br>
+
 ![ESP32C3 Super Mini - NRF905](./images/Obohos_schematic.JPG)
-
-
-
-
-
-
-
-
 
 
