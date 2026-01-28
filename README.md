@@ -59,21 +59,20 @@ The HS-06 remote uses following 2 byte codes:<br>
 - 0x0010  Right<br>
 - 0x0080  Left<br>
 
-<h2>Basic configuration</h2>
+<h2>Basic communication setting</h2>
 The remotes all have a 2 byte payload size, 32-bit addresses and 8-bit CRC.<br>
 The NRF905 chip ignores all communications with not matching payload size and/or wrong address and/or wrong CRC.<br>
 Of course the frequency/channel must match too.<br>
-The other configurations in the "nRF905 Radio Library" can remain unchanged<br>
 
 <h2>Necessary configurations</h2>
-nRF905\_config.h in library needs not to be edited
+nRF905\_config.h in library needs not to be edited, as all specifics are dealt with in the main program<br>
 <h4>Defines for the actual remote and local settings are in Obohos.h: </h4>
 #define DEVICE\_NAME "Obohos"<br>
 and<br>
 #define CHANNEL 0x71<br>
 #define RXADDR  0x10070006 &nbsp;&nbsp;&nbsp;&nbsp;// Address of this device<br>
 #define TXADDR  0x10070006 &nbsp;&nbsp;&nbsp;&nbsp;// Address of device to send to<br>
-
+and:<br>
 const char\* timeZone = "CET-1CEST,M3.5.0,M10.5.0/3";<br>
 
 <h4>Private credentials need to be completed in includes/secrets.h.example and saved as includes/secrets.h :</h4>
