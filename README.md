@@ -50,14 +50,14 @@ If the calculation fails, the only way to get the information is tapping the PIC
 I sniffered the data with PulseView, which has a nice decoder for the NRF905.<br>
 
 <h2>Codes</h2>
-The HS-06 remote uses following codes:<br>
+The HS-06 remote uses following 2 byte codes:<br>
 
-- 0x01  Down<br>
-- 0x02  Up<br>
-- 0x04  Off<br>
-- 0x08  On<br>
-- 0x10  Right<br>
-- 0x80  Left<br>
+- 0x0001  Down<br>
+- 0x0002  Up<br>
+- 0x0004  Off<br>
+- 0x0008  On<br>
+- 0x0010  Right<br>
+- 0x0080  Left<br>
 
 <h2>Basic configuration</h2>
 The remotes all have a 2 byte payload size, 32-bit addresses and 8-bit CRC.<br>
