@@ -161,6 +161,10 @@ void loop()
       digitalWrite(LED_PIN, LED_ON); 
       lightState = ON;
       } 
+    else
+      {
+      Serial.printf("Code: %02x\n",buffer[0] );
+      }  
     MQTTsendBlock();
 		transceiver.RX();
 

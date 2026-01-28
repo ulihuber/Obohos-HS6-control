@@ -24,8 +24,12 @@
 #define RXADDR  0x40060006 // Address of this device
 #define TXADDR  0x40060006 // Address of device to send to
 #define PAYLOAD_SIZE 2
-#define COMMAND_ON 8
-#define COMMAND_OFF 4
+#define COMMAND_ON    0x08
+#define COMMAND_OFF   0x04
+#define COMMAND_UP    0x02
+#define COMMAND_DN    0x01
+#define COMMAND_LEFT  0x80
+#define COMMAND_RIGHT 0x10
 
 nRF905 transceiver = nRF905(SPI);
 
