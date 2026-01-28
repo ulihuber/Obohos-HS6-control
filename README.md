@@ -1,6 +1,6 @@
 # Obohos-HS6-control
 
-Control of Obohos HS-6 crane remote by ESP32C3 Super Mini controller and NRF905 Wireless Transceiver Modul (Aliexpress)<br>
+Control of Obohos HS-6 crane remote by ESP32C3 Super Mini controller and NRF905 Wireless Transceiver Module <br>
 Uses nRF905 Radio Library for Arduino (by Zak Kemble)<br>
 Copyright: (C) 2026 by Uli Huber<br>
 License: GNU GPL v3 
@@ -81,7 +81,7 @@ const char \*mqtt\_password = "password";     &nbsp;&nbsp;&nbsp;&nbsp;   // MQTT
 Networks nets\[] = { { "SSID1", "password1" },{ "SSID2", "password2" } }; &nbsp;&nbsp;&nbsp;&nbsp; // table of available SSIDs, can be more than two<br>
 
 <h2>Schematic</h2>
-This is just an example for the ESP32C3 Super mini. Any other ESP32 will do.<br>
+This is just an example for the ESP32C3 Super mini and the cheap NRF905 transceiver module from Aliexpress. Any other ESP32 will do.<br>
 
 ![ESP32C3 Super Mini - NRF905](./images/Obohos_schematic.JPG)
 
