@@ -80,6 +80,11 @@ const char \*mqtt\_user     = "user";          &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&n
 const char \*mqtt\_password = "password";     &nbsp;&nbsp;&nbsp;&nbsp;   // MQTT Password here<br>
 Networks nets\[] = { { "SSID1", "password1" },{ "SSID2", "password2" } }; &nbsp;&nbsp;&nbsp;&nbsp; // table of available SSIDs, can be more than two<br>
 
+<h2>Schematic</h2>
+This is just an example for the ESP32C3 Super mini. Any other ESP32 will do.
+![ESP32C3 Super Mini - NRF905](./images/Obohos_schematic.jpg)
+
+
 
 
 
