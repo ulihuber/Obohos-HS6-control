@@ -34,7 +34,7 @@ void setup()
 	//while(!Serial.available());
   delay(5000);
   pinMode(BEEPER,OUTPUT);
-  beep(100);
+  beepMs(100);
   Serial.printf("Obohos - U.Huber 2026\n");
 	Serial.println("Build: " __TIME__ "  " __DATE__);
 	Serial.println(__FILE__);
@@ -56,7 +56,9 @@ void setup()
 	MQTTsendDiscover();
 	MQTTclient.setCallback(MQTTcallback);
 	MQTTclient.subscribe(MQTT_SWITCH_SET);
+
 	MQTTclient.publish(MQTT_SWITCH_STATE, "OFF", true);
+
 
 	// initialize OTA
   Serial.println(F("Init OTA"));
@@ -106,7 +108,7 @@ void setup()
 
   Serial.println(F("Startup complete!\n"));
   Serial.println(F("Waiting for remote or HomeAssistant..."));
-  beep(200);
+  beepMs(200);
   }
 
 /******************************************************************/
@@ -173,6 +175,7 @@ void loop()
 
 /***********************************************************/
 
+
 void checkTimeout(void)
   {
   // Test for timeout 
@@ -187,11 +190,19 @@ void checkTimeout(void)
     // Check if timout is approching and give periodical 
     // and increasing alarm
     if (ms_Remaining < BEEP_SEQUENCE_MS)
-      beep(BEEP_TIME_MS - ms_Remaining * BEEP_TIME_MS / BEEP_SEQUENCE_MS);
-
+      //beep(BEEP_TIME_MS - ms_Remaining * BEEP_TIME_MS / BEEP_SEQUENCE_MS);
+      if (! inBeep)
+        {
+          // start beep signal and initialize beep end time
+        inBeep = true;
+        beepEndTime = millis() + BEEP_TIME_MS - (ms_Remaining * BEEP_TIME_MS) / BEEP_SEQUENCE_MS ;
+        digitalWrite(BEEPER,ON);
+        }
+ 
     // Switch Off if timout strikes
     if (ms_Remaining <= 0 && lightState == ON) 
       {
+      digitalWrite(BEEPER,OFF);
       digitalWrite(LED_PIN, !LED_ON); 
       Serial.println("Licht aus!");
       MQTTclient.publish(MQTT_SWITCH_STATE, "OFF", true);
@@ -199,9 +210,17 @@ void checkTimeout(void)
       lightState = OFF;
       }
     }
+
+    if (millis() > beepEndTime && inBeep && ms_Remaining > 5000) // check for beep duration completed
+      {
+      inBeep = false;
+      digitalWrite(BEEPER,OFF);
+      }
+        
+
   }
 
-  void beep(int duration)
+  void beepMs(int duration)
     {  
     digitalWrite(BEEPER,ON);
     delay(duration);
@@ -265,11 +284,13 @@ void MQTTcallback(char* topic, byte* payload, unsigned int length)
 void MQTTreconnect() 
 {
   // Init MQTT
-  int attempts = 0;
-  while (!MQTTclient.connected() && (attempts++ < 3))  // Loop if we're not reconnected
+  int attempts = 4;
+  while (!MQTTclient.connected() && (attempts > 0))  // Loop if we're not reconnected
   {
     Serial.println("Attempting MQTT connection...");
-    if (MQTTclient.connect(deviceName, mqtt_user, mqtt_password)) 
+    if (MQTTclient.connect(deviceName, 
+                           mqtt_user, mqtt_password,
+                           MQTT_SWITCH_AVAILABILITY,1,true,"offline")) 
     {
       Serial.println("connected");
     } 
@@ -281,6 +302,7 @@ void MQTTreconnect()
       delay(2000);  // Wait 5 seconds before retrying
     }
   }
+  MQTTclient.publish(MQTT_SWITCH_AVAILABILITY,"online", true);
   if (!MQTTclient.connected())
   {
     Serial.printf("No MQTT server\n");
@@ -313,6 +335,7 @@ void sendMQTTDiscoveryMsg(String topic, String topic_type,  String unit, String 
     doc["command_topic"] = String(MQTT_SWITCH_SET);
     doc["payload_on"] = String("ON");
     doc["payload_off"] = String("OFF");
+    doc["optimistic"] = String("false");
     }
   JsonObject device = doc["device"].to<JsonObject>();
   doc["enabled_by_default"] = true;
@@ -339,6 +362,8 @@ void MQTTsendDiscover()
   sendMQTTDiscoveryMsg("SSID",      "sensor",  "",    "",        "mdi:wifi",          "{{ value_json.SSID }}");
   sendMQTTDiscoveryMsg("RSSI_WIFI", "sensor",  "dB",  "",        "mdi:wifi",          "{{ value_json.RSSI_WIFI}}");
   sendMQTTDiscoveryMsg("Light",     "switch",   "",   "",        "mdi:lightbulb",     "{{ value_json.light }}");
+  //sendMQTTDiscoveryMsg("Light",     "switch",   "",   "LIGHT",        "",     "{{ value_json.light }}");
+
   }
 
 void MQTTsendBlock() {

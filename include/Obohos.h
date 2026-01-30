@@ -36,7 +36,7 @@ nRF905 transceiver = nRF905(SPI);
 #define LED_PIN 8
 #define LED_ON 0         // LED polarity. 1 is active-high. can be changed if LED is inverted
 #define BEEPER 20
-#define BEEP_TIME_MS 900   // ms
+#define BEEP_TIME_MS 1000   // ms
 #define BEEP_SEQUENCE_MS	15000
 #define SWITCH_OFF_TIME_MINUTES	60
 #define SWITCH_OFF_TIME_MS 20000 //SWITCH_OFF_TIME_MINUTES * 60 * 1000 //milliseconds
@@ -48,12 +48,17 @@ nRF905 transceiver = nRF905(SPI);
 #define DNS_NAME   DEVICE_NAME
 #define MQTT_SWITCH_SET   DEVICE_NAME "/switch/set"
 #define MQTT_SWITCH_STATE DEVICE_NAME "/switch/state"
+#define MQTT_SWITCH_AVAILABILITY DEVICE_NAME "/switch/availability"
 #define MQTT_STATE DEVICE_NAME "/state"
 
 #define LOOP_INTERVAL   100
 #define PACKET_NONE		0
 #define PACKET_OK		1
 #define PACKET_INVALID 2
+
+hw_timer_t * beepTimer = NULL;
+bool inBeep = false;
+unsigned long beepEndTime;
 
 
 // WiFi connection
@@ -87,7 +92,7 @@ String version;
 bool lightState = OFF;
 unsigned long startTime;
 
-void beep(int duration);
+void beepMs(int duration);
 void getBestWifi();
 void getNTPtime();
 void MQTTreconnect();
